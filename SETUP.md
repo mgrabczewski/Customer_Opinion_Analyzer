@@ -1,17 +1,12 @@
-=================================================
-Process_Narzedzie_Analizujace_Opinie_Klientow.rmp
-=================================================
+#Narzedzie_Analizujace_Opinie_Klientow.rmp
 
-=================================================
-                      Polski
-=================================================
+#Polski
 
 Opis (Polski):
 Ten proces służy do analizy opinii na temat produktów na podstawie danych pobieranych z platformy internetowej Trustpilot w czasie rzeczywistym. Proces wykorzystuje skrypt Python do pobierania danych recenzji z witryny internetowej i ich przetwarzania w celu wygenerowania szczegółowych analiz.
 
 Instrukcja użycia:
-1. Uruchom Altair Studio na swoim komputerze.
-1.1 Zainstaluj poniższe rozszerzenia w Altair Studio:
+1. Uruchom Altair Studio na swoim komputerze, zainstaluj poniższe rozszerzenia w Altair Studio:
 - Operator Toolbox
 - Python Scripting (wymaga Anacondy jako środowiska Pythona, wymagane biblioteki: requests, pandas, beautifulsoup4, html5lib)
 - Text Processing
@@ -27,17 +22,15 @@ Instrukcja użycia:
 Wynik:
 Po zakończeniu analizy dane wyjściowe zostaną udostępnione w systemie Altair Studio, a poszczególne pliki wynikowe zapisane zostaną w folderze, w którym znajduję się narzędzie.
 
-=================================================
-                      English
-=================================================
+
+#English
 
 Description (English):
 This process is used for analyzing product reviews based on data retrieved in real-time from the Trustpilot online platform. The process utilizes a Python script to fetch review data from the website and process it to generate detailed analyses.
 
 Usage Instructions:
 
-1. Launch Altair Studio on your computer.
-1.1 Install the following extensions in Altair Studio:
+1. Launch Altair Studio on your computer, install the following extensions in Altair Studio:
 - Operator Toolbox
 - Python Scripting (requires Anaconda as the Python environment, required libraries: requests, pandas, beautifulsoup4, html5lib)
 - Text Processing
