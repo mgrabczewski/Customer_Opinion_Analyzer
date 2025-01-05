@@ -1,0 +1,1876 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="10.5.000">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="9.4.000" expanded="true" name="Process" origin="GENERATED_TEMPLATE">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="python_scripting:execute_python" compatibility="11.0.000" expanded="true" height="82" name="WebScraper" width="90" x="45" y="34">
+        <parameter key="script" value="from time import sleep&#10;import requests&#10;import pandas as pd&#10;from bs4 import BeautifulSoup&#10;&#10;def rm_main():&#10;&#10;&#9;users, locations, ratings, reviews, dates, headings = [], [], [], [], [], []&#10;&#9;&#10;&#9;from_page = 1&#10;&#9;to_page = 96&#10;&#9;company = 'www.heymondo.com'&#10;&#9;&#10;&#9;for i in range(from_page, to_page+1):&#10;&#9;    print(f&quot;Processing page {i}/{to_page}...&quot;)&#10;&#9;&#10;&#9;    result = requests.get(fr&quot;https://www.trustpilot.com/review/{company}?page={i}&amp;sort=recency&quot;)&#10;&#9;    soup = BeautifulSoup(result.content, 'html5lib')&#10;&#9;    &#10;&#9;    review_blocks = soup.find_all('div', {'class': 'styles_reviewCardInner__EwDq2'})&#10;&#9;    print(f&quot;Found {len(review_blocks)} review blocks.&quot;)&#10;&#9;&#10;&#9;    for block in review_blocks:&#10;&#9;        &#10;&#9;        user = block.find('span', {'class': 'typography_heading-xxs__QKBS8 typography_appearance-default__AAY17'})&#10;&#9;        users.append(user.get_text(strip=True) if user else &quot;&quot;)&#10;&#9;        &#10;&#9;        location = block.find('div', {'class': 'typography_body-m__xgxZ_ typography_appearance-subtle__8_H2l styles_detailsIcon__Fo_ua'})&#10;&#9;        locations.append(location.get_text(strip=True) if location else &quot;&quot;)&#10;&#9;        &#10;&#9;        rating = block.find('div', {'class': 'styles_reviewHeader__iU9Px'})&#10;&#9;        ratings.append(int(rating.get('data-service-review-rating')) if rating else &quot;&quot;)&#10;&#9;        &#10;&#9;        heading = block.find('h2', {'class': 'typography_heading-s__f7029 typography_appearance-default__AAY17'})&#10;&#9;        headings.append(heading.get_text(strip=True) if heading else &quot;&quot;)&#10;&#9;       &#10;&#9;        review = block.find('p', {'class': 'typography_body-l__KUYFJ typography_appearance-default__AAY17 typography_color-black__5LYEn'})&#10;&#9;        reviews.append(review.get_text(strip=True) if review else &quot;&quot;)&#10;&#9;        &#10;&#9;        date = block.find('div', {'class': 'styles_reviewContent__0Q2Tg'})&#10;&#9;        dates.append(date.get_text(strip=True).split(&quot;Date of experience:&quot;)[-1].strip() if date else &quot;&quot;)&#10;&#9;    &#10;&#9;    sleep(1)&#10;&#9;&#10;&#9;content = [f&quot;{h} {r}&quot; for h, r in zip(headings, reviews)]&#10;&#9;&#10;&#9;review_data = pd.DataFrame(&#10;&#9;    {&#10;&#9;        'Username': users,&#10;&#9;        'Location': locations,&#10;&#9;        'Content': content,&#10;&#9;        'Rating': ratings,&#10;&#9;        'Date': dates&#10;&#9;    }&#10;&#9;)&#10;&#9;&#10;&#9;print(&quot;Liczba recenzji:&quot;, review_data.shape[0])&#10;&#9;print(&quot;Liczba unikalnych użytkowników:&quot;, review_data['Username'].nunique())&#10;&#9;print(&quot;Średnia długość recenzji:&quot;, review_data['Content'].apply(len).mean())&#10;&#9;print(&quot;Rozkład ocen:\n&quot;, review_data['Rating'].value_counts())&#10;&#10;&#9;return review_data"/>
+        <parameter key="notebook_cell_tag_filter" value=""/>
+        <parameter key="use_default_python" value="true"/>
+        <parameter key="package_manager" value="conda (anaconda)"/>
+        <parameter key="use_macros" value="false"/>
+      </operator>
+      <operator activated="false" class="read_excel" compatibility="10.5.000" expanded="true" height="68" name="Read Excel" width="90" x="45" y="238">
+        <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Reviews_Heymondo_TrustPilot_27_12_EXCEL.xlsx"/>
+        <parameter key="sheet_selection" value="sheet number"/>
+        <parameter key="sheet_number" value="1"/>
+        <parameter key="imported_cell_range" value="A1"/>
+        <parameter key="encoding" value="SYSTEM"/>
+        <parameter key="use_header_row" value="true"/>
+        <parameter key="header_row" value="1"/>
+        <parameter key="first_row_as_names" value="true"/>
+        <list key="annotations"/>
+        <parameter key="date_format" value=""/>
+        <parameter key="time_zone" value="Europe/Belgrade"/>
+        <parameter key="locale" value="English (United States)"/>
+        <parameter key="read_all_values_as_polynominal" value="false"/>
+        <list key="data_set_meta_data_information"/>
+        <parameter key="read_not_matching_values_as_missings" value="true"/>
+      </operator>
+      <operator activated="true" class="python_scripting:execute_python" compatibility="11.0.000" expanded="true" height="103" name="Generate Date Attributes" width="90" x="179" y="34">
+        <parameter key="script" value="import pandas as pd&#10;&#10;def rm_main(data):&#10;&#10;    data['Date'] = pd.to_datetime(data['Date'])&#10;&#10;    data['Year'] = data['Date'].dt.year&#10;    data['Month'] = data['Date'].dt.strftime('%B')&#10;    data['Month_number'] = data['Date'].dt.month&#10;    data['Day'] = data['Date'].dt.day_name()&#10;    data['Day_number'] = data['Date'].dt.dayofweek + 1&#10;    data['Month&amp;Year'] = data['Date'].dt.strftime('%Y-%m')&#10;&#10;    return data"/>
+        <parameter key="notebook_cell_tag_filter" value=""/>
+        <parameter key="use_default_python" value="true"/>
+        <parameter key="package_manager" value="conda (anaconda)"/>
+        <parameter key="use_macros" value="false"/>
+      </operator>
+      <operator activated="true" class="replace" compatibility="10.5.000" expanded="true" height="82" name="Replace" width="90" x="313" y="34">
+        <parameter key="attribute_filter_type" value="single"/>
+        <parameter key="attribute" value="Content"/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="nominal"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="file_path"/>
+        <parameter key="block_type" value="single_value"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="single_value"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+        <parameter key="replace_what" value="https?://[-a-zA-Z0-9+&amp;@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&amp;@#/%=~_|]"/>
+        <parameter key="replace_by" value=" "/>
+      </operator>
+      <operator activated="true" class="blending:generate_id" compatibility="10.5.000" expanded="true" height="82" name="Generate ID" width="90" x="447" y="34">
+        <parameter key="create_nominal_ids" value="false"/>
+        <parameter key="offset" value="0"/>
+      </operator>
+      <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="103" name="Write Excel (8)" width="90" x="581" y="34">
+        <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/ZebraneOpinieKlientow_Heymondo_TrustPilot.xlsx"/>
+        <parameter key="file_format" value="xlsx"/>
+        <enumeration key="sheet_names"/>
+        <parameter key="sheet_name" value="RapidMiner Data"/>
+        <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+        <parameter key="number_format" value="#.0"/>
+        <parameter key="encoding" value="SYSTEM"/>
+      </operator>
+      <operator activated="true" class="sample" compatibility="10.5.000" expanded="true" height="82" name="Sample" width="90" x="715" y="34">
+        <parameter key="sample" value="relative"/>
+        <parameter key="balance_data" value="false"/>
+        <parameter key="sample_size" value="100"/>
+        <parameter key="sample_ratio" value="1.0"/>
+        <parameter key="sample_probability" value="0.1"/>
+        <list key="sample_size_per_class"/>
+        <list key="sample_ratio_per_class"/>
+        <list key="sample_probability_per_class"/>
+        <parameter key="use_local_random_seed" value="false"/>
+        <parameter key="local_random_seed" value="1992"/>
+      </operator>
+      <operator activated="true" class="nominal_to_text" compatibility="10.5.000" expanded="true" height="82" name="Nominal to Text" origin="GENERATED_TEMPLATE" width="90" x="849" y="34">
+        <parameter key="attribute_filter_type" value="single"/>
+        <parameter key="attribute" value="Content"/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="nominal"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="file_path"/>
+        <parameter key="block_type" value="single_value"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="single_value"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+      </operator>
+      <operator activated="true" class="numerical_to_polynominal" compatibility="10.5.000" expanded="true" height="82" name="Numerical to Polynominal" width="90" x="983" y="34">
+        <parameter key="attribute_filter_type" value="single"/>
+        <parameter key="attribute" value="Year"/>
+        <parameter key="attributes" value=""/>
+        <parameter key="use_except_expression" value="false"/>
+        <parameter key="value_type" value="numeric"/>
+        <parameter key="use_value_type_exception" value="false"/>
+        <parameter key="except_value_type" value="real"/>
+        <parameter key="block_type" value="value_series"/>
+        <parameter key="use_block_type_exception" value="false"/>
+        <parameter key="except_block_type" value="value_series_end"/>
+        <parameter key="invert_selection" value="false"/>
+        <parameter key="include_special_attributes" value="false"/>
+      </operator>
+      <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="229" name="Multiply clone data" width="90" x="1117" y="34"/>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="208" name="Aanaliza tematów i średniej wartości oceny dla danych tematów" width="90" x="1318" y="34">
+        <process expanded="true">
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (2)" origin="GENERATED_TEMPLATE" width="90" x="179" y="340">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (2)" origin="GENERATED_TEMPLATE" width="90" x="112" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (2)" origin="GENERATED_TEMPLATE" width="90" x="246" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (3)" origin="GENERATED_TEMPLATE" width="90" x="380" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (3)" width="90" x="514" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:stem_porter" compatibility="10.0.000" expanded="true" height="68" name="Stem (Porter)" width="90" x="648" y="34"/>
+              <connect from_port="document" to_op="Tokenize (2)" to_port="document"/>
+              <connect from_op="Tokenize (2)" from_port="document" to_op="Transform Cases (2)" to_port="document"/>
+              <connect from_op="Transform Cases (2)" from_port="document" to_op="Filter Stopwords (English) (3)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (3)" from_port="document" to_op="Filter Tokens (by Length) (3)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (3)" from_port="document" to_op="Stem (Porter)" to_port="document"/>
+              <connect from_op="Stem (Porter)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes STEMMING" width="90" x="514" y="340">
+            <list key="function_descriptions">
+              <parameter key="Topic" value="if(length(&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;respons&quot;) || contains(text, &quot;help&quot;) || contains(text, &quot;assist&quot;) || contains(text, &quot;commun&quot;) || contains(text, &quot;call&quot;) || contains(text, &quot;email&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answer&quot;) || contains(text, &quot;contact&quot;) || contains(text, &quot;custom&quot;) || contains(text, &quot;disappoint&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claim&quot;) || contains(text, &quot;process&quot;) || contains(text, &quot;easi&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refund&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;document&quot;) || contains(text, &quot;reimburs&quot;) || contains(text, &quot;payment&quot;) || contains(text, &quot;provid&quot;) || contains(text, &quot;chang&quot;) || contains(text, &quot;card&quot;) || contains(text, &quot;password&quot;) || contains(text, &quot;receipt&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;price&quot;) || contains(text, &quot;valu&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;afford&quot;) || contains(text, &quot;expens&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchas&quot;) || contains(text, &quot;work&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverag&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;term&quot;) || contains(text, &quot;condit&quot;) || contains(text, &quot;option&quot;) || contains(text, &quot;comprehens&quot;) || contains(text, &quot;cover&quot;) || contains(text, &quot;trip&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experi&quot;) || contains(text, &quot;satisfi&quot;) || contains(text, &quot;recommend&quot;) || contains(text, &quot;trust&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;happi&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hope&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimburs&quot;) || contains(text, &quot;flight&quot;) || contains(text, &quot;cancel&quot;) || contains(text, &quot;amount&quot;) || contains(text, &quot;compani&quot;) || contains(text, &quot;disappoint&quot;) || contains(text, &quot;sent&quot;) || contains(text, &quot;tri&quot;) || contains(text, &quot;insur&quot;) || contains(text, &quot;evacu&quot;) || contains(text, &quot;make&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    )&#10;) &gt; 0,&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;respons&quot;) || contains(text, &quot;help&quot;) || contains(text, &quot;assist&quot;) || contains(text, &quot;commun&quot;) || contains(text, &quot;call&quot;) || contains(text, &quot;email&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answer&quot;) || contains(text, &quot;contact&quot;) || contains(text, &quot;custom&quot;) || contains(text, &quot;disappoint&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claim&quot;) || contains(text, &quot;process&quot;) || contains(text, &quot;easi&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refund&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;document&quot;) || contains(text, &quot;reimburs&quot;) || contains(text, &quot;payment&quot;) || contains(text, &quot;provid&quot;) || contains(text, &quot;chang&quot;) || contains(text, &quot;card&quot;) || contains(text, &quot;password&quot;) || contains(text, &quot;receipt&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;price&quot;) || contains(text, &quot;valu&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;afford&quot;) || contains(text, &quot;expens&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchas&quot;) || contains(text, &quot;work&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverag&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;term&quot;) || contains(text, &quot;condit&quot;) || contains(text, &quot;option&quot;) || contains(text, &quot;comprehens&quot;) || contains(text, &quot;cover&quot;) || contains(text, &quot;trip&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experi&quot;) || contains(text, &quot;satisfi&quot;) || contains(text, &quot;recommend&quot;) || contains(text, &quot;trust&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;happi&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hope&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimburs&quot;) || contains(text, &quot;flight&quot;) || contains(text, &quot;cancel&quot;) || contains(text, &quot;amount&quot;) || contains(text, &quot;compani&quot;) || contains(text, &quot;disappoint&quot;) || contains(text, &quot;sent&quot;) || contains(text, &quot;tri&quot;) || contains(text, &quot;insur&quot;) || contains(text, &quot;evacu&quot;) || contains(text, &quot;make&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    ),&#10;    &quot;No_Topic&quot;&#10;)"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (2)" width="90" x="849" y="340">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;No_Topic&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Liczba opinii No_Topic + STEMM" width="90" x="1184" y="340">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Topic"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (4)" origin="GENERATED_TEMPLATE" width="90" x="179" y="187">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (4)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (4)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (4)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (4)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (4)" to_port="document"/>
+              <connect from_op="Tokenize (4)" from_port="document" to_op="Transform Cases (4)" to_port="document"/>
+              <connect from_op="Transform Cases (4)" from_port="document" to_op="Filter Stopwords (English) (4)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (4)" from_port="document" to_op="Filter Tokens (by Length) (4)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (4)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes NO STEMMING" width="90" x="514" y="187">
+            <list key="function_descriptions">
+              <parameter key="Topic" value="if(length(&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;service&quot;) || contains(text, &quot;responsible&quot;) || contains(text, &quot;helpful&quot;) || contains(text, &quot;assistance&quot;) || contains(text, &quot;communication&quot;) || contains(text, &quot;calling&quot;) || contains(text, &quot;emailing&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answering&quot;) || contains(text, &quot;contacting&quot;) || contains(text, &quot;customer&quot;) || contains(text, &quot;disappointment&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claims&quot;) || contains(text, &quot;processes&quot;) || contains(text, &quot;easily&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refunds&quot;) || contains(text, &quot;policy&quot;) || contains(text, &quot;documents&quot;) || contains(text, &quot;reimbursements&quot;) || contains(text, &quot;payments&quot;) || contains(text, &quot;provided&quot;) || contains(text, &quot;changing&quot;) || contains(text, &quot;cards&quot;) || contains(text, &quot;passwords&quot;) || contains(text, &quot;receipts&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;pricing&quot;) || contains(text, &quot;value&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;affordable&quot;) || contains(text, &quot;expenses&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchases&quot;) || contains(text, &quot;working&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverage&quot;) || contains(text, &quot;policy&quot;) || contains(text, &quot;terms&quot;) || contains(text, &quot;conditions&quot;) || contains(text, &quot;options&quot;) || contains(text, &quot;comprehensive&quot;) || contains(text, &quot;covered&quot;) || contains(text, &quot;trips&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experience&quot;) || contains(text, &quot;satisfied&quot;) || contains(text, &quot;recommendations&quot;) || contains(text, &quot;trustworthy&quot;) || contains(text, &quot;service&quot;) || contains(text, &quot;happy&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hopeful&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimbursement&quot;) || contains(text, &quot;flights&quot;) || contains(text, &quot;cancellations&quot;) || contains(text, &quot;amounts&quot;) || contains(text, &quot;companies&quot;) || contains(text, &quot;disappointed&quot;) || contains(text, &quot;sending&quot;) || contains(text, &quot;trying&quot;) || contains(text, &quot;insurance&quot;) || contains(text, &quot;evacuations&quot;) || contains(text, &quot;making&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    )&#10;) &gt; 0,&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;service&quot;) || contains(text, &quot;responsible&quot;) || contains(text, &quot;helpful&quot;) || contains(text, &quot;assistance&quot;) || contains(text, &quot;communication&quot;) || contains(text, &quot;calling&quot;) || contains(text, &quot;emailing&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answering&quot;) || contains(text, &quot;contacting&quot;) || contains(text, &quot;customer&quot;) || contains(text, &quot;disappointment&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claims&quot;) || contains(text, &quot;processes&quot;) || contains(text, &quot;easily&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refunds&quot;) || contains(text, &quot;policy&quot;) || contains(text, &quot;documents&quot;) || contains(text, &quot;reimbursements&quot;) || contains(text, &quot;payments&quot;) || contains(text, &quot;provided&quot;) || contains(text, &quot;changing&quot;) || contains(text, &quot;cards&quot;) || contains(text, &quot;passwords&quot;) || contains(text, &quot;receipts&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;pricing&quot;) || contains(text, &quot;value&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;affordable&quot;) || contains(text, &quot;expenses&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchases&quot;) || contains(text, &quot;working&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverage&quot;) || contains(text, &quot;policy&quot;) || contains(text, &quot;terms&quot;) || contains(text, &quot;conditions&quot;) || contains(text, &quot;options&quot;) || contains(text, &quot;comprehensive&quot;) || contains(text, &quot;covered&quot;) || contains(text, &quot;trips&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experience&quot;) || contains(text, &quot;satisfied&quot;) || contains(text, &quot;recommendations&quot;) || contains(text, &quot;trustworthy&quot;) || contains(text, &quot;service&quot;) || contains(text, &quot;happy&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hopeful&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimbursement&quot;) || contains(text, &quot;flights&quot;) || contains(text, &quot;cancellations&quot;) || contains(text, &quot;amounts&quot;) || contains(text, &quot;companies&quot;) || contains(text, &quot;disappointed&quot;) || contains(text, &quot;sending&quot;) || contains(text, &quot;trying&quot;) || contains(text, &quot;insurance&quot;) || contains(text, &quot;evacuations&quot;) || contains(text, &quot;making&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    ),&#10;    &quot;No_Topic&quot;&#10;)"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples" width="90" x="849" y="187">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;No_Topic&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Liczba opinii No_Topic + NO STEMM" width="90" x="1184" y="187">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Topic"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (1)" origin="GENERATED_TEMPLATE" width="90" x="179" y="595">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (1)" origin="GENERATED_TEMPLATE" width="90" x="112" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (1)" origin="GENERATED_TEMPLATE" width="90" x="246" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (2)" origin="GENERATED_TEMPLATE" width="90" x="380" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (2)" width="90" x="514" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:stem_porter" compatibility="10.0.000" expanded="true" height="68" name="Stem (Porter) (1)" width="90" x="648" y="34"/>
+              <connect from_port="document" to_op="Tokenize (1)" to_port="document"/>
+              <connect from_op="Tokenize (1)" from_port="document" to_op="Transform Cases (1)" to_port="document"/>
+              <connect from_op="Transform Cases (1)" from_port="document" to_op="Filter Stopwords (English) (2)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (2)" from_port="document" to_op="Filter Tokens (by Length) (2)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (2)" from_port="document" to_op="Stem (Porter) (1)" to_port="document"/>
+              <connect from_op="Stem (Porter) (1)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes" width="90" x="313" y="595">
+            <list key="function_descriptions">
+              <parameter key="Topic" value="if(length(&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;respons&quot;) || contains(text, &quot;help&quot;) || contains(text, &quot;assist&quot;) || contains(text, &quot;commun&quot;) || contains(text, &quot;call&quot;) || contains(text, &quot;email&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answer&quot;) || contains(text, &quot;contact&quot;) || contains(text, &quot;custom&quot;) || contains(text, &quot;disappoint&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claim&quot;) || contains(text, &quot;process&quot;) || contains(text, &quot;easi&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refund&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;document&quot;) || contains(text, &quot;reimburs&quot;) || contains(text, &quot;payment&quot;) || contains(text, &quot;provid&quot;) || contains(text, &quot;chang&quot;) || contains(text, &quot;card&quot;) || contains(text, &quot;password&quot;) || contains(text, &quot;receipt&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;price&quot;) || contains(text, &quot;valu&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;afford&quot;) || contains(text, &quot;expens&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchas&quot;) || contains(text, &quot;work&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverag&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;term&quot;) || contains(text, &quot;condit&quot;) || contains(text, &quot;option&quot;) || contains(text, &quot;comprehens&quot;) || contains(text, &quot;cover&quot;) || contains(text, &quot;trip&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experi&quot;) || contains(text, &quot;satisfi&quot;) || contains(text, &quot;recommend&quot;) || contains(text, &quot;trust&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;happi&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hope&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimburs&quot;) || contains(text, &quot;flight&quot;) || contains(text, &quot;cancel&quot;) || contains(text, &quot;amount&quot;) || contains(text, &quot;compani&quot;) || contains(text, &quot;disappoint&quot;) || contains(text, &quot;sent&quot;) || contains(text, &quot;tri&quot;) || contains(text, &quot;insur&quot;) || contains(text, &quot;evacu&quot;) || contains(text, &quot;make&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    )&#10;) &gt; 0,&#10;    concat(&#10;        if(contains(text, &quot;support&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;respons&quot;) || contains(text, &quot;help&quot;) || contains(text, &quot;assist&quot;) || contains(text, &quot;commun&quot;) || contains(text, &quot;call&quot;) || contains(text, &quot;email&quot;) || contains(text, &quot;agent&quot;) || contains(text, &quot;answer&quot;) || contains(text, &quot;contact&quot;) || contains(text, &quot;custom&quot;) || contains(text, &quot;disappoint&quot;), &quot;Customer_Service,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;claim&quot;) || contains(text, &quot;process&quot;) || contains(text, &quot;easi&quot;) || contains(text, &quot;fast&quot;) || contains(text, &quot;refund&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;document&quot;) || contains(text, &quot;reimburs&quot;) || contains(text, &quot;payment&quot;) || contains(text, &quot;provid&quot;) || contains(text, &quot;chang&quot;) || contains(text, &quot;card&quot;) || contains(text, &quot;password&quot;) || contains(text, &quot;receipt&quot;), &quot;Insurance_Procedures,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;price&quot;) || contains(text, &quot;valu&quot;) || contains(text, &quot;cost&quot;) || contains(text, &quot;afford&quot;) || contains(text, &quot;expens&quot;) || contains(text, &quot;worth&quot;) || contains(text, &quot;purchas&quot;) || contains(text, &quot;work&quot;), &quot;Price_and_Value,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;coverag&quot;) || contains(text, &quot;polici&quot;) || contains(text, &quot;term&quot;) || contains(text, &quot;condit&quot;) || contains(text, &quot;option&quot;) || contains(text, &quot;comprehens&quot;) || contains(text, &quot;cover&quot;) || contains(text, &quot;trip&quot;) || contains(text, &quot;travel&quot;), &quot;Insurance_Coverage,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;experi&quot;) || contains(text, &quot;satisfi&quot;) || contains(text, &quot;recommend&quot;) || contains(text, &quot;trust&quot;) || contains(text, &quot;servic&quot;) || contains(text, &quot;happi&quot;) || contains(text, &quot;good&quot;) || contains(text, &quot;great&quot;) || contains(text, &quot;nice&quot;) || contains(text, &quot;hope&quot;), &quot;Overall_Experience,&quot;,&quot;&quot;),&#10;        if(contains(text, &quot;reimburs&quot;) || contains(text, &quot;flight&quot;) || contains(text, &quot;cancel&quot;) || contains(text, &quot;amount&quot;) || contains(text, &quot;compani&quot;) || contains(text, &quot;disappoint&quot;) || contains(text, &quot;sent&quot;) || contains(text, &quot;tri&quot;) || contains(text, &quot;insur&quot;) || contains(text, &quot;evacu&quot;) || contains(text, &quot;make&quot;), &quot;Claims_and_Cancellations,&quot;,&quot;&quot;)&#10;    ),&#10;    &quot;No_Topic&quot;&#10;)"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="82" name="Multiply" width="90" x="447" y="595"/>
+          <operator activated="true" class="python_scripting:execute_python" compatibility="11.0.000" expanded="true" height="103" name="Execute Python" width="90" x="581" y="595">
+            <parameter key="script" value="import pandas as pd&#10;import numpy as np&#10;&#10;def rm_main(data):&#10;&#10;   data['Topic'] = data['Topic'].str.rstrip(',')&#10;&#10;   new_data = pd.DataFrame(data.Topic.str.split(',').tolist(), index=data.id).stack()&#10;   new_data = new_data.reset_index([0, 'id'])&#10;   new_data.columns = ['id','Topic_split']&#10;&#10;   result = new_data.merge(data, on='id', how='left')&#10;   &#10;   return result"/>
+            <parameter key="notebook_cell_tag_filter" value=""/>
+            <parameter key="use_default_python" value="true"/>
+            <parameter key="package_manager" value="conda (anaconda)"/>
+            <parameter key="use_macros" value="false"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="166" name="Multiply (3)" width="90" x="715" y="595"/>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (9)" width="90" x="916" y="697">
+            <parameter key="parameter_expression" value="Rating&lt;4"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Aggregate (Średnia ocena opinii w danych tematach - RANKING&lt;4)" width="90" x="1050" y="697">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Topic_split"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="103" name="Write Excel" width="90" x="1184" y="697">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_SredniaOcenDlaDanegoTematu_Ranking1-3.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Aggregate (Średnia ocena opinii w danych tematach - ALL DATA)" width="90" x="916" y="544">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Topic_split"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="103" name="Write Excel (2)" width="90" x="1184" y="544">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_SredniaOcenDlaDanegoTematu_ALLDATA.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Process Documents from Data (4)" to_port="example set"/>
+          <connect from_port="in 2" to_op="Process Documents from Data (2)" to_port="example set"/>
+          <connect from_port="in 3" to_op="Process Documents from Data (1)" to_port="example set"/>
+          <connect from_op="Process Documents from Data (2)" from_port="example set" to_op="Generate Attributes STEMMING" to_port="table input"/>
+          <connect from_op="Generate Attributes STEMMING" from_port="table output" to_op="Filter Examples (2)" to_port="example set input"/>
+          <connect from_op="Filter Examples (2)" from_port="example set output" to_op="Liczba opinii No_Topic + STEMM" to_port="example set input"/>
+          <connect from_op="Liczba opinii No_Topic + STEMM" from_port="example set output" to_port="out 2"/>
+          <connect from_op="Process Documents from Data (4)" from_port="example set" to_op="Generate Attributes NO STEMMING" to_port="table input"/>
+          <connect from_op="Generate Attributes NO STEMMING" from_port="table output" to_op="Filter Examples" to_port="example set input"/>
+          <connect from_op="Filter Examples" from_port="example set output" to_op="Liczba opinii No_Topic + NO STEMM" to_port="example set input"/>
+          <connect from_op="Liczba opinii No_Topic + NO STEMM" from_port="example set output" to_port="out 1"/>
+          <connect from_op="Process Documents from Data (1)" from_port="example set" to_op="Generate Attributes" to_port="table input"/>
+          <connect from_op="Generate Attributes" from_port="table output" to_op="Multiply" to_port="input"/>
+          <connect from_op="Multiply" from_port="output 1" to_op="Execute Python" to_port="input 1"/>
+          <connect from_op="Execute Python" from_port="output 1" to_op="Multiply (3)" to_port="input"/>
+          <connect from_op="Multiply (3)" from_port="output 1" to_op="Aggregate (Średnia ocena opinii w danych tematach - ALL DATA)" to_port="example set input"/>
+          <connect from_op="Multiply (3)" from_port="output 2" to_op="Filter Examples (9)" to_port="example set input"/>
+          <connect from_op="Multiply (3)" from_port="output 3" to_port="out 5"/>
+          <connect from_op="Multiply (3)" from_port="output 4" to_port="out 6"/>
+          <connect from_op="Filter Examples (9)" from_port="example set output" to_op="Aggregate (Średnia ocena opinii w danych tematach - RANKING&lt;4)" to_port="example set input"/>
+          <connect from_op="Aggregate (Średnia ocena opinii w danych tematach - RANKING&lt;4)" from_port="example set output" to_op="Write Excel" to_port="input"/>
+          <connect from_op="Write Excel" from_port="through" to_port="out 4"/>
+          <connect from_op="Aggregate (Średnia ocena opinii w danych tematach - ALL DATA)" from_port="example set output" to_op="Write Excel (2)" to_port="input"/>
+          <connect from_op="Write Excel (2)" from_port="through" to_port="out 3"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="source_in 3" spacing="0"/>
+          <portSpacing port="source_in 4" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <portSpacing port="sink_out 3" spacing="0"/>
+          <portSpacing port="sink_out 4" spacing="0"/>
+          <portSpacing port="sink_out 5" spacing="0"/>
+          <portSpacing port="sink_out 6" spacing="0"/>
+          <portSpacing port="sink_out 7" spacing="0"/>
+          <portSpacing port="sink_out 8" spacing="0"/>
+          <description align="center" color="green" colored="true" height="945" resized="true" width="1259" x="70" y="59">Analiza: Rozpoznawanie temat&amp;#243;w opinii z u&amp;#380;yciem autorskiego s&amp;#322;ownika</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="157" y="121">S&amp;#322;owa niestemmingowane</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="161" y="281">S&amp;#322;owa stemmingowane</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="876" y="485">ALL DATA</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="184" x="879" y="637">RANKIG &amp;lt; 4</description>
+        </process>
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="208" name="Analiza unikalnych wyrażeń dla danych tematów" width="90" x="1452" y="187">
+        <process expanded="true">
+          <operator activated="true" class="concurrency:join" compatibility="10.5.000" expanded="true" height="82" name="Join" width="90" x="112" y="136">
+            <parameter key="remove_double_attributes" value="true"/>
+            <parameter key="join_type" value="inner"/>
+            <parameter key="use_id_attribute_as_key" value="false"/>
+            <list key="key_attributes">
+              <parameter key="id" value="id"/>
+            </list>
+            <parameter key="keep_both_join_attributes" value="false"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="208" name="Treści opinii i Tematy" width="90" x="313" y="136"/>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Overall_Experience)" width="90" x="581" y="646">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Overall_Experience&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (No_Topic)" width="90" x="581" y="544">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;No_Topic&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Insurance_Procedures)" width="90" x="581" y="442">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Insurance_Procedures&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Insurance_Coverage)" width="90" x="581" y="340">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Insurance_Coverage&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Customer_Service)" width="90" x="581" y="238">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Customer_Service&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Claims_and_Cancellations)" width="90" x="581" y="136">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Claims_and_Cancellations&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (5)" origin="GENERATED_TEMPLATE" width="90" x="715" y="136">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (5)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (5)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (5)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (5)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (2)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (5)" to_port="document"/>
+              <connect from_op="Tokenize (5)" from_port="document" to_op="Transform Cases (5)" to_port="document"/>
+              <connect from_op="Transform Cases (5)" from_port="document" to_op="Filter Stopwords (English) (5)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (5)" from_port="document" to_op="Filter Tokens (by Length) (5)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (5)" from_port="document" to_op="Generate n-Grams (Terms) (2)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (2)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Claims_and_Cancellations)" width="90" x="849" y="136"/>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data" origin="GENERATED_TEMPLATE" width="90" x="715" y="238">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (3)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize" to_port="document"/>
+              <connect from_op="Tokenize" from_port="document" to_op="Transform Cases" to_port="document"/>
+              <connect from_op="Transform Cases" from_port="document" to_op="Filter Stopwords (English)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English)" from_port="document" to_op="Filter Tokens (by Length)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length)" from_port="document" to_op="Generate n-Grams (Terms) (3)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (3)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Customer_Service)" width="90" x="849" y="238"/>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Customer_Service" width="90" x="983" y="238">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (6)" origin="GENERATED_TEMPLATE" width="90" x="715" y="340">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (6)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (6)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (6)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (6)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (7)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (6)" to_port="document"/>
+              <connect from_op="Tokenize (6)" from_port="document" to_op="Transform Cases (6)" to_port="document"/>
+              <connect from_op="Transform Cases (6)" from_port="document" to_op="Filter Stopwords (English) (6)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (6)" from_port="document" to_op="Filter Tokens (by Length) (6)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (6)" from_port="document" to_op="Generate n-Grams (Terms) (7)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (7)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Insurance_Coverage)" width="90" x="849" y="340"/>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (7)" origin="GENERATED_TEMPLATE" width="90" x="715" y="442">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (7)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (7)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (7)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (7)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (7)" to_port="document"/>
+              <connect from_op="Tokenize (7)" from_port="document" to_op="Transform Cases (7)" to_port="document"/>
+              <connect from_op="Transform Cases (7)" from_port="document" to_op="Filter Stopwords (English) (7)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (7)" from_port="document" to_op="Filter Tokens (by Length) (7)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (7)" from_port="document" to_op="Generate n-Grams (Terms)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Insurance_Procedures)" width="90" x="849" y="442"/>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Insurance_Procedures" width="90" x="983" y="442">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (8)" origin="GENERATED_TEMPLATE" width="90" x="715" y="544">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (8)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (8)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (8)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (8)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (4)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (8)" to_port="document"/>
+              <connect from_op="Tokenize (8)" from_port="document" to_op="Transform Cases (8)" to_port="document"/>
+              <connect from_op="Transform Cases (8)" from_port="document" to_op="Filter Stopwords (English) (8)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (8)" from_port="document" to_op="Filter Tokens (by Length) (8)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (8)" from_port="document" to_op="Generate n-Grams (Terms) (4)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (4)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (No Topic)" width="90" x="849" y="544"/>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - No_Topic" width="90" x="983" y="544">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (9)" origin="GENERATED_TEMPLATE" width="90" x="715" y="646">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (9)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (9)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (9)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (9)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (6)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (9)" to_port="document"/>
+              <connect from_op="Tokenize (9)" from_port="document" to_op="Transform Cases (9)" to_port="document"/>
+              <connect from_op="Transform Cases (9)" from_port="document" to_op="Filter Stopwords (English) (9)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (9)" from_port="document" to_op="Filter Tokens (by Length) (9)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (9)" from_port="document" to_op="Generate n-Grams (Terms) (6)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (6)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Overall_Experience)" width="90" x="849" y="646"/>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Overall_Experience" width="90" x="983" y="646">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (Price_and_Value)" width="90" x="581" y="748">
+            <parameter key="parameter_expression" value="contains(Topic, &quot;Price_and_Value&quot;)"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (10)" origin="GENERATED_TEMPLATE" width="90" x="715" y="748">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (10)" origin="GENERATED_TEMPLATE" width="90" x="179" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (10)" origin="GENERATED_TEMPLATE" width="90" x="313" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (10)" origin="GENERATED_TEMPLATE" width="90" x="447" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (10)" width="90" x="581" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:generate_n_grams_terms" compatibility="10.0.000" expanded="true" height="68" name="Generate n-Grams (Terms) (5)" width="90" x="715" y="34">
+                <parameter key="max_length" value="2"/>
+              </operator>
+              <connect from_port="document" to_op="Tokenize (10)" to_port="document"/>
+              <connect from_op="Tokenize (10)" from_port="document" to_op="Transform Cases (10)" to_port="document"/>
+              <connect from_op="Transform Cases (10)" from_port="document" to_op="Filter Stopwords (English) (10)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (10)" from_port="document" to_op="Filter Tokens (by Length) (10)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (10)" from_port="document" to_op="Generate n-Grams (Terms) (5)" to_port="document"/>
+              <connect from_op="Generate n-Grams (Terms) (5)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="text:wordlist_to_data" compatibility="10.0.000" expanded="true" height="82" name="WordList to Data (Price_and_Value)" width="90" x="849" y="748"/>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Price_and_Value" width="90" x="983" y="748">
+            <list key="sort_by">
+              <parameter key="total" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Insurance_Coverage" width="90" x="983" y="340">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Top words - Claims_and_Cancellations" width="90" x="983" y="136">
+            <list key="sort_by">
+              <parameter key="total" value="descending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="python_scripting:execute_python" compatibility="11.0.000" expanded="true" height="229" name="Unikalne słowa dla danego tematu" width="90" x="1184" y="340">
+            <parameter key="script" value="import pandas as pd&#10;&#10;def rm_main(input0, input1, input2, input3, input4, input5, input6):&#10;&#10;    def find_unique_words(target_table, comparison_tables):&#10;&#10;        comparison_combined = pd.concat(comparison_tables, ignore_index=True)&#10;&#10;        unique_words = target_table[~target_table['word'].isin(comparison_combined['word'])]&#10;        return unique_words&#10;&#10;    unique_table0 = find_unique_words(input0, [input1, input2, input3, input4, input5, input6])&#10;    unique_table1 = find_unique_words(input1, [input0, input2, input3, input4, input5, input6])&#10;    unique_table2 = find_unique_words(input2, [input0, input1, input3, input4, input5, input6])&#10;    unique_table3 = find_unique_words(input3, [input0, input1, input2, input4, input5, input6])&#10;    unique_table4 = find_unique_words(input4, [input0, input1, input2, input3, input5, input6])&#10;    unique_table5 = find_unique_words(input5, [input0, input1, input2, input3, input4, input6])&#10;    unique_table6 = find_unique_words(input6, [input0, input1, input2, input3, input4, input5])&#10;&#10;    return unique_table0, unique_table1, unique_table2, unique_table3, unique_table4, unique_table5, unique_table6"/>
+            <parameter key="notebook_cell_tag_filter" value=""/>
+            <parameter key="use_default_python" value="true"/>
+            <parameter key="package_manager" value="conda (anaconda)"/>
+            <parameter key="use_macros" value="false"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="229" name="Write Excel (5)" width="90" x="1318" y="340">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_UnikalneWyrazeniaDlaDanegoTematu.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names">
+              <parameter key="sheet_name_element" value="Claims_and_Cancellations"/>
+              <parameter key="sheet_name_element" value="Customer_Service"/>
+              <parameter key="sheet_name_element" value=" Insurance_Coverage"/>
+              <parameter key="sheet_name_element" value="Insurance_Procedures"/>
+              <parameter key="sheet_name_element" value="No_Topic"/>
+              <parameter key="sheet_name_element" value="Overall_Experience"/>
+              <parameter key="sheet_name_element" value="Price_and_Value"/>
+            </enumeration>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Join" to_port="left"/>
+          <connect from_port="in 2" to_op="Join" to_port="right"/>
+          <connect from_op="Join" from_port="join" to_op="Treści opinii i Tematy" to_port="input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 1" to_op="Filter Examples (Claims_and_Cancellations)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 2" to_op="Filter Examples (Customer_Service)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 3" to_op="Filter Examples (Insurance_Coverage)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 4" to_op="Filter Examples (Insurance_Procedures)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 5" to_op="Filter Examples (No_Topic)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 6" to_op="Filter Examples (Overall_Experience)" to_port="example set input"/>
+          <connect from_op="Treści opinii i Tematy" from_port="output 7" to_op="Filter Examples (Price_and_Value)" to_port="example set input"/>
+          <connect from_op="Filter Examples (Overall_Experience)" from_port="example set output" to_op="Process Documents from Data (9)" to_port="example set"/>
+          <connect from_op="Filter Examples (No_Topic)" from_port="example set output" to_op="Process Documents from Data (8)" to_port="example set"/>
+          <connect from_op="Filter Examples (Insurance_Procedures)" from_port="example set output" to_op="Process Documents from Data (7)" to_port="example set"/>
+          <connect from_op="Filter Examples (Insurance_Coverage)" from_port="example set output" to_op="Process Documents from Data (6)" to_port="example set"/>
+          <connect from_op="Filter Examples (Customer_Service)" from_port="example set output" to_op="Process Documents from Data" to_port="example set"/>
+          <connect from_op="Filter Examples (Claims_and_Cancellations)" from_port="example set output" to_op="Process Documents from Data (5)" to_port="example set"/>
+          <connect from_op="Process Documents from Data (5)" from_port="word list" to_op="WordList to Data (Claims_and_Cancellations)" to_port="word list"/>
+          <connect from_op="WordList to Data (Claims_and_Cancellations)" from_port="example set" to_op="Top words - Claims_and_Cancellations" to_port="example set input"/>
+          <connect from_op="Process Documents from Data" from_port="word list" to_op="WordList to Data (Customer_Service)" to_port="word list"/>
+          <connect from_op="WordList to Data (Customer_Service)" from_port="example set" to_op="Top words - Customer_Service" to_port="example set input"/>
+          <connect from_op="Top words - Customer_Service" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 2"/>
+          <connect from_op="Process Documents from Data (6)" from_port="word list" to_op="WordList to Data (Insurance_Coverage)" to_port="word list"/>
+          <connect from_op="WordList to Data (Insurance_Coverage)" from_port="example set" to_op="Top words - Insurance_Coverage" to_port="example set input"/>
+          <connect from_op="Process Documents from Data (7)" from_port="word list" to_op="WordList to Data (Insurance_Procedures)" to_port="word list"/>
+          <connect from_op="WordList to Data (Insurance_Procedures)" from_port="example set" to_op="Top words - Insurance_Procedures" to_port="example set input"/>
+          <connect from_op="Top words - Insurance_Procedures" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 4"/>
+          <connect from_op="Process Documents from Data (8)" from_port="word list" to_op="WordList to Data (No Topic)" to_port="word list"/>
+          <connect from_op="WordList to Data (No Topic)" from_port="example set" to_op="Top words - No_Topic" to_port="example set input"/>
+          <connect from_op="Top words - No_Topic" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 5"/>
+          <connect from_op="Process Documents from Data (9)" from_port="word list" to_op="WordList to Data (Overall_Experience)" to_port="word list"/>
+          <connect from_op="WordList to Data (Overall_Experience)" from_port="example set" to_op="Top words - Overall_Experience" to_port="example set input"/>
+          <connect from_op="Top words - Overall_Experience" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 6"/>
+          <connect from_op="Filter Examples (Price_and_Value)" from_port="example set output" to_op="Process Documents from Data (10)" to_port="example set"/>
+          <connect from_op="Process Documents from Data (10)" from_port="word list" to_op="WordList to Data (Price_and_Value)" to_port="word list"/>
+          <connect from_op="WordList to Data (Price_and_Value)" from_port="example set" to_op="Top words - Price_and_Value" to_port="example set input"/>
+          <connect from_op="Top words - Price_and_Value" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 7"/>
+          <connect from_op="Top words - Insurance_Coverage" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 3"/>
+          <connect from_op="Top words - Claims_and_Cancellations" from_port="example set output" to_op="Unikalne słowa dla danego tematu" to_port="input 1"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 1" to_op="Write Excel (5)" to_port="input"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 2" to_op="Write Excel (5)" to_port="input 2"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 3" to_op="Write Excel (5)" to_port="input 3"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 4" to_op="Write Excel (5)" to_port="input 4"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 5" to_op="Write Excel (5)" to_port="input 5"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 6" to_op="Write Excel (5)" to_port="input 6"/>
+          <connect from_op="Unikalne słowa dla danego tematu" from_port="output 7" to_op="Write Excel (5)" to_port="input 7"/>
+          <connect from_op="Write Excel (5)" from_port="through" to_port="out 1"/>
+          <connect from_op="Write Excel (5)" from_port="through 2" to_port="out 2"/>
+          <connect from_op="Write Excel (5)" from_port="through 3" to_port="out 3"/>
+          <connect from_op="Write Excel (5)" from_port="through 4" to_port="out 4"/>
+          <connect from_op="Write Excel (5)" from_port="through 5" to_port="out 5"/>
+          <connect from_op="Write Excel (5)" from_port="through 6" to_port="out 6"/>
+          <connect from_op="Write Excel (5)" from_port="through 7" to_port="out 7"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="source_in 3" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <portSpacing port="sink_out 3" spacing="0"/>
+          <portSpacing port="sink_out 4" spacing="0"/>
+          <portSpacing port="sink_out 5" spacing="0"/>
+          <portSpacing port="sink_out 6" spacing="0"/>
+          <portSpacing port="sink_out 7" spacing="0"/>
+          <portSpacing port="sink_out 8" spacing="0"/>
+          <description align="center" color="gray" colored="true" height="806" resized="false" width="1259" x="236" y="72">Analiza: Jak cz&amp;#281;sto w danym temacie wyst&amp;#281;puj&amp;#261; dane s&amp;#322;owa</description>
+        </process>
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="187" name="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" width="90" x="1318" y="391">
+        <process expanded="true">
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="187" name="Dane" width="90" x="246" y="136"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia ocena i Liczba klientów na dany kraj" width="90" x="648" y="697">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (8)" width="90" x="581" y="544">
+            <parameter key="parameter_expression" value=""/>
+            <parameter key="condition_class" value="custom_filters"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list">
+              <parameter key="filters_entry_key" value="Rating.eq.5"/>
+            </list>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="ROZKŁAD OCEN KRAJE RANKING_5" width="90" x="715" y="544">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location|Rating"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (7)" width="90" x="581" y="442">
+            <parameter key="parameter_expression" value=""/>
+            <parameter key="condition_class" value="custom_filters"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list">
+              <parameter key="filters_entry_key" value="Rating.eq.4"/>
+            </list>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="ROZKŁAD OCEN KRAJE RANKING_4" width="90" x="715" y="442">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location|Rating"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (4)" width="90" x="581" y="136">
+            <parameter key="parameter_expression" value=""/>
+            <parameter key="condition_class" value="custom_filters"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list">
+              <parameter key="filters_entry_key" value="Rating.eq.1"/>
+            </list>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="ROZKŁAD OCEN KRAJE RANKING_1" width="90" x="715" y="136">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location|Rating"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (5)" width="90" x="581" y="238">
+            <parameter key="parameter_expression" value=""/>
+            <parameter key="condition_class" value="custom_filters"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list">
+              <parameter key="filters_entry_key" value="Rating.eq.2"/>
+            </list>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="ROZKŁAD OCEN KRAJE RANKING_2" width="90" x="715" y="238">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location|Rating"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (6)" width="90" x="581" y="340">
+            <parameter key="parameter_expression" value=""/>
+            <parameter key="condition_class" value="custom_filters"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list">
+              <parameter key="filters_entry_key" value="Rating.eq.3"/>
+            </list>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="ROZKŁAD OCEN KRAJE RANKING_3" width="90" x="715" y="340">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="Location|Rating"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="208" name="Write Excel (4)" width="90" x="1117" y="136">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_RozkładIlosciOcenNaDanyKraj_&amp;_ SredniaWartoscOcenNaDanyKraj.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Dane" to_port="input"/>
+          <connect from_op="Dane" from_port="output 1" to_op="Filter Examples (4)" to_port="example set input"/>
+          <connect from_op="Dane" from_port="output 2" to_op="Filter Examples (5)" to_port="example set input"/>
+          <connect from_op="Dane" from_port="output 3" to_op="Filter Examples (6)" to_port="example set input"/>
+          <connect from_op="Dane" from_port="output 4" to_op="Filter Examples (7)" to_port="example set input"/>
+          <connect from_op="Dane" from_port="output 5" to_op="Filter Examples (8)" to_port="example set input"/>
+          <connect from_op="Dane" from_port="output 6" to_op="Średnia ocena i Liczba klientów na dany kraj" to_port="example set input"/>
+          <connect from_op="Średnia ocena i Liczba klientów na dany kraj" from_port="example set output" to_op="Write Excel (4)" to_port="input 6"/>
+          <connect from_op="Filter Examples (8)" from_port="example set output" to_op="ROZKŁAD OCEN KRAJE RANKING_5" to_port="example set input"/>
+          <connect from_op="ROZKŁAD OCEN KRAJE RANKING_5" from_port="example set output" to_op="Write Excel (4)" to_port="input 5"/>
+          <connect from_op="Filter Examples (7)" from_port="example set output" to_op="ROZKŁAD OCEN KRAJE RANKING_4" to_port="example set input"/>
+          <connect from_op="ROZKŁAD OCEN KRAJE RANKING_4" from_port="example set output" to_op="Write Excel (4)" to_port="input 4"/>
+          <connect from_op="Filter Examples (4)" from_port="example set output" to_op="ROZKŁAD OCEN KRAJE RANKING_1" to_port="example set input"/>
+          <connect from_op="ROZKŁAD OCEN KRAJE RANKING_1" from_port="example set output" to_op="Write Excel (4)" to_port="input"/>
+          <connect from_op="Filter Examples (5)" from_port="example set output" to_op="ROZKŁAD OCEN KRAJE RANKING_2" to_port="example set input"/>
+          <connect from_op="ROZKŁAD OCEN KRAJE RANKING_2" from_port="example set output" to_op="Write Excel (4)" to_port="input 2"/>
+          <connect from_op="Filter Examples (6)" from_port="example set output" to_op="ROZKŁAD OCEN KRAJE RANKING_3" to_port="example set input"/>
+          <connect from_op="ROZKŁAD OCEN KRAJE RANKING_3" from_port="example set output" to_op="Write Excel (4)" to_port="input 3"/>
+          <connect from_op="Write Excel (4)" from_port="through" to_port="out 1"/>
+          <connect from_op="Write Excel (4)" from_port="through 2" to_port="out 2"/>
+          <connect from_op="Write Excel (4)" from_port="through 3" to_port="out 3"/>
+          <connect from_op="Write Excel (4)" from_port="through 4" to_port="out 4"/>
+          <connect from_op="Write Excel (4)" from_port="through 5" to_port="out 5"/>
+          <connect from_op="Write Excel (4)" from_port="through 6" to_port="out 6"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <portSpacing port="sink_out 3" spacing="0"/>
+          <portSpacing port="sink_out 4" spacing="0"/>
+          <portSpacing port="sink_out 5" spacing="0"/>
+          <portSpacing port="sink_out 6" spacing="0"/>
+          <portSpacing port="sink_out 7" spacing="0"/>
+          <description align="center" color="blue" colored="true" height="732" resized="false" width="1259" x="81" y="89">Analiza rozk&amp;#322;adu ilo&amp;#347;ci ocen na dany kraj</description>
+        </process>
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="82" name="Analiza sposobu identyfikacji użytkownika i jego wpływ na ocenę" width="90" x="1318" y="595">
+        <process expanded="true">
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (14)" width="90" x="179" y="187">
+            <parameter key="parameter_expression" value="1==1"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes (3)" width="90" x="313" y="187">
+            <list key="function_descriptions">
+              <parameter key="User_Type" value="if(matches(Username, &quot;(?i)customer&quot;), &quot;Anonymous&quot;, &#10;   if(matches(Username, &quot;^[A-Z]\\.[ ]?[A-Z]\\.$&quot;), &quot;Anonymous&quot;, &#10;      if(matches(Username, &quot;(?i)^(mr|ms|mrs)\\b[^ ]+$&quot;), &quot;Anonymous&quot;,&#10;         if(matches(Username, &quot;(?i).*\\b(in|at|from|and)\\b.*&quot;), &quot;Anonymous&quot;,&#10;            if(matches(Username, &quot;^[^ ]+$&quot;), &quot;Anonymous&quot;, &#10;               if(matches(Username, &quot;.*[0-9]+.*&quot;), &quot;Anonymous&quot;, &#10;                  if(matches(Username, &quot;(.)\\1{2,}&quot;), &quot;Anonymous&quot;, &#10;                     if(length(Username) &lt; 5, &quot;Anonymous&quot;, &#10;                        if(matches(Username, &quot;^[^ ]+ [a-zA-Z]\\.?$&quot;), &quot;Anonymous&quot;,&#10;                           if(matches(Username, &quot;^[^ ]+\\s+[^ ]+(\\s+[^ ]+)?$&quot;), &quot;Named_User&quot;, &quot;Anonymous&quot;)&#10;                        )&#10;                     )&#10;                  )&#10;               )&#10;            )&#10;         )&#10;      )&#10;   )&#10;)"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="103" name="Multiply (2)" width="90" x="447" y="187"/>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (13)" width="90" x="581" y="289">
+            <parameter key="parameter_expression" value="User_Type==&quot;Named_User&quot;"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="filter_examples" compatibility="10.5.000" expanded="true" height="103" name="Filter Examples (11)" width="90" x="581" y="136">
+            <parameter key="parameter_expression" value="User_Type==&quot;Anonymous&quot;"/>
+            <parameter key="condition_class" value="expression"/>
+            <parameter key="invert_filter" value="false"/>
+            <list key="filters_list"/>
+            <parameter key="filters_logic_and" value="true"/>
+            <parameter key="filters_check_metadata" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Aggregate (8)" width="90" x="715" y="136">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="User_Type"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Aggregate (9)" width="90" x="715" y="289">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+              <parameter key="Username" value="count"/>
+            </list>
+            <parameter key="group_by_attributes" value="User_Type"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="append" compatibility="10.5.000" expanded="true" height="103" name="Append (Średnia ocen dla danego USER_TYPE)" width="90" x="849" y="187">
+            <parameter key="data_management" value="auto"/>
+            <parameter key="merge_type" value="all"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="103" name="Write Excel (3)" width="90" x="1050" y="187">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_JakAnonimowoscUzytkownikaWplywaNaOpinie.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Filter Examples (14)" to_port="example set input"/>
+          <connect from_op="Filter Examples (14)" from_port="example set output" to_op="Generate Attributes (3)" to_port="table input"/>
+          <connect from_op="Generate Attributes (3)" from_port="table output" to_op="Multiply (2)" to_port="input"/>
+          <connect from_op="Multiply (2)" from_port="output 1" to_op="Filter Examples (11)" to_port="example set input"/>
+          <connect from_op="Multiply (2)" from_port="output 2" to_op="Filter Examples (13)" to_port="example set input"/>
+          <connect from_op="Filter Examples (13)" from_port="example set output" to_op="Aggregate (9)" to_port="example set input"/>
+          <connect from_op="Filter Examples (11)" from_port="example set output" to_op="Aggregate (8)" to_port="example set input"/>
+          <connect from_op="Aggregate (8)" from_port="example set output" to_op="Append (Średnia ocen dla danego USER_TYPE)" to_port="example set 1"/>
+          <connect from_op="Aggregate (9)" from_port="example set output" to_op="Append (Średnia ocen dla danego USER_TYPE)" to_port="example set 2"/>
+          <connect from_op="Append (Średnia ocen dla danego USER_TYPE)" from_port="merged set" to_op="Write Excel (3)" to_port="input"/>
+          <connect from_op="Write Excel (3)" from_port="through" to_port="out 1"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <description align="center" color="orange" colored="true" height="434" resized="false" width="1259" x="76" y="49">Analiza: Jak spos&amp;#243;b identyfikacji u&amp;#380;ytkownika wp&amp;#322;ywa na jego ocen&amp;#281;</description>
+        </process>
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="187" name="Rzoklad liczby wystawianych opinii w czasie" width="90" x="1318" y="697">
+        <process expanded="true">
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes (4)" width="90" x="313" y="187">
+            <list key="function_descriptions">
+              <parameter key="User_Type" value="if(matches(Username, &quot;(?i)customer&quot;), &quot;Anonymous&quot;, &#10;   if(matches(Username, &quot;^[A-Z]\\.[ ]?[A-Z]\\.$&quot;), &quot;Anonymous&quot;, &#10;      if(matches(Username, &quot;(?i)^(mr|ms|mrs)\\b[^ ]+$&quot;), &quot;Anonymous&quot;,&#10;         if(matches(Username, &quot;(?i).*\\b(in|at|from|and)\\b.*&quot;), &quot;Anonymous&quot;,&#10;            if(matches(Username, &quot;^[^ ]+$&quot;), &quot;Anonymous&quot;, &#10;               if(matches(Username, &quot;.*[0-9]+.*&quot;), &quot;Anonymous&quot;, &#10;                  if(matches(Username, &quot;(.)\\1{2,}&quot;), &quot;Anonymous&quot;, &#10;                     if(length(Username) &lt; 5, &quot;Anonymous&quot;, &#10;                        if(matches(Username, &quot;^[^ ]+ [a-zA-Z]\\.?$&quot;), &quot;Anonymous&quot;,&#10;                           if(matches(Username, &quot;^[^ ]+\\s+[^ ]+(\\s+[^ ]+)?$&quot;), &quot;Named_User&quot;, &quot;Anonymous&quot;)&#10;                        )&#10;                     )&#10;                  )&#10;               )&#10;            )&#10;         )&#10;      )&#10;   )&#10;)"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="187" name="Opinie z datami" width="90" x="514" y="187"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (YEAR)" width="90" x="782" y="289">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Year"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie" width="90" x="782" y="391">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Month|Month_number|User_Type"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (MONTH) by User_Type" width="90" x="916" y="391">
+            <list key="sort_by">
+              <parameter key="Month_number" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (YEAR) by User_Type" width="90" x="782" y="187">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Year|User_Type"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (2)" width="90" x="782" y="595">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Day|Day_number|User_Type"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (DAY) by User_Type" width="90" x="916" y="595">
+            <list key="sort_by">
+              <parameter key="Day_number" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (3)" width="90" x="782" y="493">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Month|Month_number"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (MONTH)" width="90" x="916" y="493">
+            <list key="sort_by">
+              <parameter key="Month_number" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (4)" width="90" x="782" y="697">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Username" value="count"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Day|Day_number"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Rozkład Liczby opinii w czasie (DAY)" width="90" x="916" y="697">
+            <list key="sort_by">
+              <parameter key="Day_number" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="208" name="Write Excel (6)" width="90" x="1251" y="187">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_RozkładLiczbyOpiniiWCzasie_YEAR_MONTH_DAY.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Generate Attributes (4)" to_port="table input"/>
+          <connect from_op="Generate Attributes (4)" from_port="table output" to_op="Opinie z datami" to_port="input"/>
+          <connect from_op="Opinie z datami" from_port="output 1" to_op="Rozkład Liczby opinii w czasie (YEAR) by User_Type" to_port="example set input"/>
+          <connect from_op="Opinie z datami" from_port="output 2" to_op="Rozkład Liczby opinii w czasie (YEAR)" to_port="example set input"/>
+          <connect from_op="Opinie z datami" from_port="output 3" to_op="Rozkład Liczby opinii w czasie" to_port="example set input"/>
+          <connect from_op="Opinie z datami" from_port="output 4" to_op="Rozkład Liczby opinii w czasie (3)" to_port="example set input"/>
+          <connect from_op="Opinie z datami" from_port="output 5" to_op="Rozkład Liczby opinii w czasie (2)" to_port="example set input"/>
+          <connect from_op="Opinie z datami" from_port="output 6" to_op="Rozkład Liczby opinii w czasie (4)" to_port="example set input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (YEAR)" from_port="example set output" to_op="Write Excel (6)" to_port="input 2"/>
+          <connect from_op="Rozkład Liczby opinii w czasie" from_port="example set output" to_op="Rozkład Liczby opinii w czasie (MONTH) by User_Type" to_port="example set input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (MONTH) by User_Type" from_port="example set output" to_op="Write Excel (6)" to_port="input 3"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (YEAR) by User_Type" from_port="example set output" to_op="Write Excel (6)" to_port="input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (2)" from_port="example set output" to_op="Rozkład Liczby opinii w czasie (DAY) by User_Type" to_port="example set input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (DAY) by User_Type" from_port="example set output" to_op="Write Excel (6)" to_port="input 5"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (3)" from_port="example set output" to_op="Rozkład Liczby opinii w czasie (MONTH)" to_port="example set input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (MONTH)" from_port="example set output" to_op="Write Excel (6)" to_port="input 4"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (4)" from_port="example set output" to_op="Rozkład Liczby opinii w czasie (DAY)" to_port="example set input"/>
+          <connect from_op="Rozkład Liczby opinii w czasie (DAY)" from_port="example set output" to_op="Write Excel (6)" to_port="input 6"/>
+          <connect from_op="Write Excel (6)" from_port="through" to_port="out 1"/>
+          <connect from_op="Write Excel (6)" from_port="through 2" to_port="out 2"/>
+          <connect from_op="Write Excel (6)" from_port="through 3" to_port="out 3"/>
+          <connect from_op="Write Excel (6)" from_port="through 4" to_port="out 4"/>
+          <connect from_op="Write Excel (6)" from_port="through 5" to_port="out 5"/>
+          <connect from_op="Write Excel (6)" from_port="through 6" to_port="out 6"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <portSpacing port="sink_out 3" spacing="0"/>
+          <portSpacing port="sink_out 4" spacing="0"/>
+          <portSpacing port="sink_out 5" spacing="0"/>
+          <portSpacing port="sink_out 6" spacing="0"/>
+          <portSpacing port="sink_out 7" spacing="0"/>
+          <description align="center" color="purple" colored="true" height="704" resized="true" width="1178" x="241" y="121">Analiza: Rozk&amp;#322;ad liczby opinii w czasie, wed&amp;#322;ug YEAR, MONTH, DAY OF THE WEEK</description>
+        </process>
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="10.5.000" expanded="true" height="166" name="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" width="90" x="1452" y="901">
+        <process expanded="true">
+          <operator activated="true" class="concurrency:join" compatibility="10.5.000" expanded="true" height="82" name="Join (2)" width="90" x="45" y="136">
+            <parameter key="remove_double_attributes" value="true"/>
+            <parameter key="join_type" value="inner"/>
+            <parameter key="use_id_attribute_as_key" value="false"/>
+            <list key="key_attributes">
+              <parameter key="id" value="id"/>
+            </list>
+            <parameter key="keep_both_join_attributes" value="false"/>
+          </operator>
+          <operator activated="true" class="text:process_document_from_data" compatibility="8.1.000" expanded="true" height="82" name="Process Documents from Data (3)" origin="GENERATED_TEMPLATE" width="90" x="246" y="136">
+            <parameter key="create_word_vector" value="false"/>
+            <parameter key="vector_creation" value="TF-IDF"/>
+            <parameter key="add_meta_information" value="true"/>
+            <parameter key="keep_text" value="true"/>
+            <parameter key="prune_method" value="none"/>
+            <parameter key="prune_below_percent" value="3.0"/>
+            <parameter key="prune_above_percent" value="30.0"/>
+            <parameter key="prune_below_rank" value="0.05"/>
+            <parameter key="prune_above_rank" value="0.95"/>
+            <parameter key="datamanagement" value="double_sparse_array"/>
+            <parameter key="data_management" value="auto"/>
+            <parameter key="select_attributes_and_weights" value="false"/>
+            <list key="specify_weights"/>
+            <process expanded="true">
+              <operator activated="true" class="text:tokenize" compatibility="10.0.000" expanded="true" height="68" name="Tokenize (3)" origin="GENERATED_TEMPLATE" width="90" x="112" y="34">
+                <parameter key="mode" value="non letters"/>
+                <parameter key="characters" value=".:"/>
+                <parameter key="language" value="English"/>
+                <parameter key="max_token_length" value="3"/>
+              </operator>
+              <operator activated="true" class="text:transform_cases" compatibility="10.0.000" expanded="true" height="68" name="Transform Cases (3)" origin="GENERATED_TEMPLATE" width="90" x="246" y="34">
+                <parameter key="transform_to" value="lower case"/>
+              </operator>
+              <operator activated="true" class="text:filter_stopwords_english" compatibility="10.0.000" expanded="true" height="68" name="Filter Stopwords (English) (11)" origin="GENERATED_TEMPLATE" width="90" x="380" y="34"/>
+              <operator activated="true" class="text:filter_by_length" compatibility="10.0.000" expanded="true" height="68" name="Filter Tokens (by Length) (11)" width="90" x="514" y="34">
+                <parameter key="min_chars" value="4"/>
+                <parameter key="max_chars" value="25"/>
+              </operator>
+              <operator activated="true" class="text:stem_porter" compatibility="10.0.000" expanded="true" height="68" name="Stem (Porter) (2)" width="90" x="648" y="34"/>
+              <connect from_port="document" to_op="Tokenize (3)" to_port="document"/>
+              <connect from_op="Tokenize (3)" from_port="document" to_op="Transform Cases (3)" to_port="document"/>
+              <connect from_op="Transform Cases (3)" from_port="document" to_op="Filter Stopwords (English) (11)" to_port="document"/>
+              <connect from_op="Filter Stopwords (English) (11)" from_port="document" to_op="Filter Tokens (by Length) (11)" to_port="document"/>
+              <connect from_op="Filter Tokens (by Length) (11)" from_port="document" to_op="Stem (Porter) (2)" to_port="document"/>
+              <connect from_op="Stem (Porter) (2)" from_port="document" to_port="document 1"/>
+              <portSpacing port="source_document" spacing="0"/>
+              <portSpacing port="sink_document 1" spacing="0"/>
+              <portSpacing port="sink_document 2" spacing="0"/>
+            </process>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="124" name="Multiply (4)" width="90" x="380" y="136"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia wartość oceny dla miesiąca (3)" width="90" x="916" y="442">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Month&amp;Year"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Średnia ocena - RATING (MONTH)" width="90" x="1050" y="442">
+            <list key="sort_by">
+              <parameter key="Month&amp;Year" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="operator_toolbox:extract_sentiment" compatibility="2.18.000" expanded="true" height="103" name="Extract Sentiment SENTIWORDNET" width="90" x="514" y="289">
+            <parameter key="model" value="sentiwordnet"/>
+            <parameter key="text_attribute" value="text"/>
+            <parameter key="show_advanced_output" value="false"/>
+            <parameter key="use_default_tokenization_regex" value="true"/>
+            <list key="additional_words"/>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes (6)" width="90" x="648" y="289">
+            <list key="function_descriptions">
+              <parameter key="Score_SentiWordNet" value="2 * Score + 3"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="103" name="Multiply (6)" width="90" x="782" y="289"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia wartość oceny dla miesiąca (2)" width="90" x="916" y="289">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Score_SentiWordNet" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Month&amp;Year"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Średnia ocena - SENTIWORDNET (MONTH)" width="90" x="1050" y="289">
+            <list key="sort_by">
+              <parameter key="Month&amp;Year" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="operator_toolbox:extract_sentiment" compatibility="2.18.000" expanded="true" height="103" name="Extract Sentiment VADER" width="90" x="514" y="136">
+            <parameter key="model" value="vader"/>
+            <parameter key="text_attribute" value="text"/>
+            <parameter key="show_advanced_output" value="false"/>
+            <parameter key="use_default_tokenization_regex" value="true"/>
+            <list key="additional_words"/>
+          </operator>
+          <operator activated="true" class="blending:generate_columns" compatibility="10.5.000" expanded="true" height="82" name="Generate Attributes (2)" width="90" x="648" y="136">
+            <list key="function_descriptions">
+              <parameter key="Score_Vader" value="2 * Score + 3"/>
+            </list>
+            <parameter key="keep_all_columns" value="true"/>
+            <parameter key="default_time_zone" value="Europe/Belgrade"/>
+          </operator>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="103" name="Multiply (5)" width="90" x="782" y="136"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia wartość oceny dla miesiąca" width="90" x="916" y="136">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Score_Vader" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Month&amp;Year"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="blending:sort" compatibility="10.5.000" expanded="true" height="82" name="Średnia ocena -VADER (MONTH)" width="90" x="1050" y="136">
+            <list key="sort_by">
+              <parameter key="Month&amp;Year" value="ascending"/>
+            </list>
+          </operator>
+          <operator activated="true" class="union" compatibility="10.5.000" expanded="true" height="82" name="Union" width="90" x="916" y="595"/>
+          <operator activated="true" class="multiply" compatibility="10.5.000" expanded="true" height="103" name="Multiply (7)" width="90" x="1050" y="595"/>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia Ocena Tematów z wykorzystaniem MODELI" width="90" x="1184" y="748">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Score_Vader" value="average"/>
+              <parameter key="Score_SentiWordNet" value="average"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Topic_split"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="aggregate" compatibility="10.5.000" expanded="true" height="82" name="Średnia Ocena Roczna z wykorzystaniem MODELI" width="90" x="1184" y="595">
+            <parameter key="use_default_aggregation" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="attribute_value"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="time"/>
+            <parameter key="block_type" value="attribute_block"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="value_matrix_row_start"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="default_aggregation_function" value="average"/>
+            <list key="aggregation_attributes">
+              <parameter key="Score_Vader" value="average"/>
+              <parameter key="Score_SentiWordNet" value="average"/>
+              <parameter key="Rating" value="average"/>
+            </list>
+            <parameter key="group_by_attributes" value="Year"/>
+            <parameter key="count_all_combinations" value="false"/>
+            <parameter key="only_distinct" value="false"/>
+            <parameter key="ignore_missings" value="true"/>
+          </operator>
+          <operator activated="true" class="write_excel" compatibility="10.5.000" expanded="true" height="187" name="Write Excel (7)" width="90" x="1318" y="136">
+            <parameter key="excel_file" value="D:/Studia/Praca Inzynierska 7 sem/Prototyp narzedzia/Analiza_DynamikiŚrednichOcen_ModeleSentymentuVaderSentiwordnet_&amp;_Ranking.xlsx"/>
+            <parameter key="file_format" value="xlsx"/>
+            <enumeration key="sheet_names"/>
+            <parameter key="sheet_name" value="RapidMiner Data"/>
+            <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss"/>
+            <parameter key="number_format" value="#.0"/>
+            <parameter key="encoding" value="SYSTEM"/>
+          </operator>
+          <connect from_port="in 1" to_op="Join (2)" to_port="left"/>
+          <connect from_port="in 2" to_op="Join (2)" to_port="right"/>
+          <connect from_op="Join (2)" from_port="join" to_op="Process Documents from Data (3)" to_port="example set"/>
+          <connect from_op="Process Documents from Data (3)" from_port="example set" to_op="Multiply (4)" to_port="input"/>
+          <connect from_op="Multiply (4)" from_port="output 1" to_op="Extract Sentiment VADER" to_port="exa"/>
+          <connect from_op="Multiply (4)" from_port="output 2" to_op="Extract Sentiment SENTIWORDNET" to_port="exa"/>
+          <connect from_op="Multiply (4)" from_port="output 3" to_op="Średnia wartość oceny dla miesiąca (3)" to_port="example set input"/>
+          <connect from_op="Średnia wartość oceny dla miesiąca (3)" from_port="example set output" to_op="Średnia ocena - RATING (MONTH)" to_port="example set input"/>
+          <connect from_op="Średnia ocena - RATING (MONTH)" from_port="example set output" to_op="Write Excel (7)" to_port="input 3"/>
+          <connect from_op="Extract Sentiment SENTIWORDNET" from_port="exa" to_op="Generate Attributes (6)" to_port="table input"/>
+          <connect from_op="Generate Attributes (6)" from_port="table output" to_op="Multiply (6)" to_port="input"/>
+          <connect from_op="Multiply (6)" from_port="output 1" to_op="Średnia wartość oceny dla miesiąca (2)" to_port="example set input"/>
+          <connect from_op="Multiply (6)" from_port="output 2" to_op="Union" to_port="example set 2"/>
+          <connect from_op="Średnia wartość oceny dla miesiąca (2)" from_port="example set output" to_op="Średnia ocena - SENTIWORDNET (MONTH)" to_port="example set input"/>
+          <connect from_op="Średnia ocena - SENTIWORDNET (MONTH)" from_port="example set output" to_op="Write Excel (7)" to_port="input 2"/>
+          <connect from_op="Extract Sentiment VADER" from_port="exa" to_op="Generate Attributes (2)" to_port="table input"/>
+          <connect from_op="Generate Attributes (2)" from_port="table output" to_op="Multiply (5)" to_port="input"/>
+          <connect from_op="Multiply (5)" from_port="output 1" to_op="Średnia wartość oceny dla miesiąca" to_port="example set input"/>
+          <connect from_op="Multiply (5)" from_port="output 2" to_op="Union" to_port="example set 1"/>
+          <connect from_op="Średnia wartość oceny dla miesiąca" from_port="example set output" to_op="Średnia ocena -VADER (MONTH)" to_port="example set input"/>
+          <connect from_op="Średnia ocena -VADER (MONTH)" from_port="example set output" to_op="Write Excel (7)" to_port="input"/>
+          <connect from_op="Union" from_port="union" to_op="Multiply (7)" to_port="input"/>
+          <connect from_op="Multiply (7)" from_port="output 1" to_op="Średnia Ocena Roczna z wykorzystaniem MODELI" to_port="example set input"/>
+          <connect from_op="Multiply (7)" from_port="output 2" to_op="Średnia Ocena Tematów z wykorzystaniem MODELI" to_port="example set input"/>
+          <connect from_op="Średnia Ocena Tematów z wykorzystaniem MODELI" from_port="example set output" to_op="Write Excel (7)" to_port="input 5"/>
+          <connect from_op="Średnia Ocena Roczna z wykorzystaniem MODELI" from_port="example set output" to_op="Write Excel (7)" to_port="input 4"/>
+          <connect from_op="Write Excel (7)" from_port="through" to_port="out 1"/>
+          <connect from_op="Write Excel (7)" from_port="through 2" to_port="out 2"/>
+          <connect from_op="Write Excel (7)" from_port="through 3" to_port="out 3"/>
+          <connect from_op="Write Excel (7)" from_port="through 4" to_port="out 4"/>
+          <connect from_op="Write Excel (7)" from_port="through 5" to_port="out 5"/>
+          <portSpacing port="source_in 1" spacing="0"/>
+          <portSpacing port="source_in 2" spacing="0"/>
+          <portSpacing port="source_in 3" spacing="0"/>
+          <portSpacing port="sink_out 1" spacing="0"/>
+          <portSpacing port="sink_out 2" spacing="0"/>
+          <portSpacing port="sink_out 3" spacing="0"/>
+          <portSpacing port="sink_out 4" spacing="0"/>
+          <portSpacing port="sink_out 5" spacing="0"/>
+          <portSpacing port="sink_out 6" spacing="0"/>
+          <description align="center" color="green" colored="true" height="848" resized="true" width="1258" x="208" y="36">Analiza: Analiza dynamiki &amp;#347;rednich ocen przy u&amp;#380;yciu model&amp;#243;w do analizysentymentu</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="936" y="77">MODEL VADER</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="936" y="230">MODEL SENTIWORDNET</description>
+          <description align="center" color="yellow" colored="false" height="50" resized="false" width="185" x="936" y="383">RANKING</description>
+        </process>
+      </operator>
+      <connect from_op="WebScraper" from_port="output 1" to_op="Generate Date Attributes" to_port="input 1"/>
+      <connect from_op="Generate Date Attributes" from_port="output 1" to_op="Replace" to_port="example set input"/>
+      <connect from_op="Replace" from_port="example set output" to_op="Generate ID" to_port="example set input"/>
+      <connect from_op="Generate ID" from_port="example set output" to_op="Write Excel (8)" to_port="input"/>
+      <connect from_op="Write Excel (8)" from_port="through" to_op="Sample" to_port="example set input"/>
+      <connect from_op="Sample" from_port="example set output" to_op="Nominal to Text" to_port="example set input"/>
+      <connect from_op="Nominal to Text" from_port="example set output" to_op="Numerical to Polynominal" to_port="example set input"/>
+      <connect from_op="Numerical to Polynominal" from_port="example set output" to_op="Multiply clone data" to_port="input"/>
+      <connect from_op="Multiply clone data" from_port="output 1" to_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" to_port="in 1"/>
+      <connect from_op="Multiply clone data" from_port="output 2" to_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" to_port="in 2"/>
+      <connect from_op="Multiply clone data" from_port="output 3" to_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" to_port="in 3"/>
+      <connect from_op="Multiply clone data" from_port="output 4" to_op="Analiza unikalnych wyrażeń dla danych tematów" to_port="in 2"/>
+      <connect from_op="Multiply clone data" from_port="output 5" to_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" to_port="in 1"/>
+      <connect from_op="Multiply clone data" from_port="output 6" to_op="Analiza sposobu identyfikacji użytkownika i jego wpływ na ocenę" to_port="in 1"/>
+      <connect from_op="Multiply clone data" from_port="output 7" to_op="Rzoklad liczby wystawianych opinii w czasie" to_port="in 1"/>
+      <connect from_op="Multiply clone data" from_port="output 8" to_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" to_port="in 1"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 1" to_port="result 1"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 2" to_port="result 2"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 3" to_port="result 3"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 4" to_port="result 4"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 5" to_op="Analiza unikalnych wyrażeń dla danych tematów" to_port="in 1"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 6" to_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" to_port="in 2"/>
+      <connect from_op="Aanaliza tematów i średniej wartości oceny dla danych tematów" from_port="out 7" to_port="result 30"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 1" to_port="result 5"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 2" to_port="result 6"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 3" to_port="result 7"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 4" to_port="result 8"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 5" to_port="result 9"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 6" to_port="result 10"/>
+      <connect from_op="Analiza unikalnych wyrażeń dla danych tematów" from_port="out 7" to_port="result 11"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 1" to_port="result 12"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 2" to_port="result 13"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 3" to_port="result 14"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 4" to_port="result 15"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 5" to_port="result 16"/>
+      <connect from_op="Rozkład liczby opinii i średnia wartość oceny dla danych krajów" from_port="out 6" to_port="result 17"/>
+      <connect from_op="Analiza sposobu identyfikacji użytkownika i jego wpływ na ocenę" from_port="out 1" to_port="result 18"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 1" to_port="result 19"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 2" to_port="result 20"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 3" to_port="result 21"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 4" to_port="result 25"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 5" to_port="result 26"/>
+      <connect from_op="Rzoklad liczby wystawianych opinii w czasie" from_port="out 6" to_port="result 27"/>
+      <connect from_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" from_port="out 1" to_port="result 22"/>
+      <connect from_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" from_port="out 2" to_port="result 23"/>
+      <connect from_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" from_port="out 3" to_port="result 24"/>
+      <connect from_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" from_port="out 4" to_port="result 28"/>
+      <connect from_op="Analiza dynamiki srednich ocen z użyciem modeli analizy sentymentu" from_port="out 5" to_port="result 29"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+      <portSpacing port="sink_result 4" spacing="0"/>
+      <portSpacing port="sink_result 5" spacing="0"/>
+      <portSpacing port="sink_result 6" spacing="0"/>
+      <portSpacing port="sink_result 7" spacing="0"/>
+      <portSpacing port="sink_result 8" spacing="0"/>
+      <portSpacing port="sink_result 9" spacing="0"/>
+      <portSpacing port="sink_result 10" spacing="0"/>
+      <portSpacing port="sink_result 11" spacing="0"/>
+      <portSpacing port="sink_result 12" spacing="0"/>
+      <portSpacing port="sink_result 13" spacing="0"/>
+      <portSpacing port="sink_result 14" spacing="0"/>
+      <portSpacing port="sink_result 15" spacing="0"/>
+      <portSpacing port="sink_result 16" spacing="0"/>
+      <portSpacing port="sink_result 17" spacing="0"/>
+      <portSpacing port="sink_result 18" spacing="0"/>
+      <portSpacing port="sink_result 19" spacing="0"/>
+      <portSpacing port="sink_result 20" spacing="0"/>
+      <portSpacing port="sink_result 21" spacing="0"/>
+      <portSpacing port="sink_result 22" spacing="0"/>
+      <portSpacing port="sink_result 23" spacing="0"/>
+      <portSpacing port="sink_result 24" spacing="0"/>
+      <portSpacing port="sink_result 25" spacing="0"/>
+      <portSpacing port="sink_result 26" spacing="0"/>
+      <portSpacing port="sink_result 27" spacing="0"/>
+      <portSpacing port="sink_result 28" spacing="0"/>
+      <portSpacing port="sink_result 29" spacing="0"/>
+      <portSpacing port="sink_result 30" spacing="0"/>
+      <portSpacing port="sink_result 31" spacing="0"/>
+      <description align="center" color="yellow" colored="false" height="122" resized="false" width="180" x="43" y="324">W zwi&amp;#261;zku z tym &amp;#380;e dane pobierane s&amp;#261; ze strony z ka&amp;#380;dym uruchomieniem procesu zaleca si&amp;#281; uruchomienie kopii danych z pliku excel</description>
+      <description align="center" color="yellow" colored="false" height="61" resized="true" width="184" x="42" y="151">Proces zbierania danych moze trwa&amp;#263; od 2-5min</description>
+    </process>
+  </operator>
+</process>
